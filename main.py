@@ -11,16 +11,20 @@ def get_total_pages(url) -> int:
     return math.ceil(data["total"] / data["pagination"]["size"])
 
 
-def get_competition_names() -> list[str]:
+def get_competition_names(params: str = "") -> list[str]:
     competition_names = []
-    total_pages = get_total_pages(f"{API_URL}competitions.json")
+    url = f"{API_URL}competitions{params}"
+    total_pages = get_total_pages(f"{url}.json")
     for page in range(1, total_pages + 1):
-        url = f"{API_URL}competitions-page-{page}.json"
+        page_url = url
+        if total_pages > 1:
+            page_url += f"{page}"
+        page_url += ".json"
         try:
-            comps_data = requests.get(url).json()
+            comps_data = requests.get(page_url).json()
             competition_names.extend([comp["id"] for comp in comps_data["items"]])
         except json.JSONDecodeError:
-            print(f"Failed to load data at {url}")
+            print(f"Failed to load data at {page_url}")
     return competition_names
 
 
@@ -43,6 +47,7 @@ def filter_dnfs(solves: list[int]):
     return [solve for solve in solves if solve != -1]
 
 
-all_solves = filter_dnfs(get_competition_results(get_competition_names(), "333"))
+comps = get_competition_names("/333")
+all_solves = filter_dnfs(get_competition_results(comps, "333"))
 total_average = sum(all_solves) / len(all_solves)
 print(f"Total 3x3 average: {total_average}")
