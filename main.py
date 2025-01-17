@@ -20,12 +20,17 @@ def get_competition_names() -> list[str]:
 
 
 def get_competition_results(competition_names: list[str], event_id: str) -> list[int]:
-    results = []
+    solves = []
     for comp in competition_names:
         comp_data = requests.get(f"{API_URL}results/{comp}/{event_id}.json").json()
-        solves = [solve for comp in comp_data["items"] for solve in comp["solves"]]
-        results.extend(solves)
-    return results
+        comp_solves = [solve for comp in comp_data["items"] for solve in comp["solves"]]
+        solves.extend(comp_solves)
+    return solves
 
 
-get_competition_results(["BrizZonSylwesterOpen2022"], "444")
+def filter_dnfs(solves: list[int]):
+    return [solve for solve in solves if solve != -1]
+
+
+all_solves = get_competition_results(["BrizZonSylwesterOpen2022"], "444")
+no_dnf_solves = filter_dnfs(all_solves)
