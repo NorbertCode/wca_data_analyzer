@@ -1,5 +1,4 @@
 import requests
-import json
 import math
 
 
@@ -11,43 +10,45 @@ def get_total_pages(url) -> int:
     return math.ceil(data["total"] / data["pagination"]["size"])
 
 
+def get_json_data(params: str) -> dict:
+    """Returns the contents of "items" from all pages"""
+    output = []
+    url = f"{API_URL}{params}"
+    total_pages = get_total_pages(f"{url}.json")
+    if total_pages > 1:
+        for page in range(1, total_pages + 1):
+            page_data = requests.get(f"{url}-page-{page}.json").json()
+            output.extend(page_data["items"])
+    else:
+        output = requests.get(f"{url}.json").json()["items"]
+    return output
+
+
 def get_competition_names(params: str = "") -> list[str]:
     competition_names = []
-    url = f"{API_URL}competitions{params}"
-    total_pages = get_total_pages(f"{url}.json")
-    for page in range(1, total_pages + 1):
-        page_url = url
-        if total_pages > 1:
-            page_url += f"{page}"
-        page_url += ".json"
-        try:
-            comps_data = requests.get(page_url).json()
-            competition_names.extend([comp["id"] for comp in comps_data["items"]])
-        except json.JSONDecodeError:
-            print(f"Failed to load data at {page_url}")
+    comp_data = get_json_data(f"competitions{params}")
+    for competition in comp_data:
+        competition_names.append(competition["id"])
     return competition_names
 
 
-def get_competition_results(competition_names: list[str], event_id: str) -> list[int]:
-    solves = []
+def get_competition_solves(competition_names: list[str], params: str = "",
+                            output: callable = None) -> list[int]:
+    total_solves = []
     for comp in competition_names:
-        url = f"{API_URL}results/{comp}/{event_id}.json"
-        try:
-            comp_data = requests.get(url).json()
-            comp_solves = [solve
-                           for comp in comp_data["items"]
-                           for solve in comp["solves"]]
-            solves.extend(comp_solves)
-        except json.JSONDecodeError:
-            print(f"Failed to load data at {url}")
-    return solves
+        comp_data = get_json_data(f"results/{comp}{params}")
+        comp_solves = [solve for result in comp_data for solve in result["solves"]]
+        total_solves.extend(comp_solves)
+        if output is not None:
+            output(competition_names.index(comp), len(competition_names))
+    return total_solves
 
 
 def filter_dnfs(solves: list[int]):
     return [solve for solve in solves if solve != -1]
 
 
-comps = get_competition_names("/333")
-all_solves = filter_dnfs(get_competition_results(comps, "333"))
+comps = get_competition_names("/333")[9995:10000]
+all_solves = filter_dnfs(get_competition_solves(comps, "/333", lambda curr, end: print(f"{curr}/{end}")))
 total_average = sum(all_solves) / len(all_solves)
 print(f"Total 3x3 average: {total_average}")
