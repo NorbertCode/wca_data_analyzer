@@ -48,10 +48,10 @@ def get_competition_solves(competition_names: list[str], params: str = "",
     for comp in competition_names:
         try:
             comp_data = get_json_data(f"results/{comp}{params}")
+            comp_solves = [solve for result in comp_data for solve in result["solves"]]
+            total_solves.extend(comp_solves)
         except errors.InvalidDataError as exc:
             error_output(exc)
-        comp_solves = [solve for result in comp_data for solve in result["solves"]]
-        total_solves.extend(comp_solves)
         if output is not None:
             output(competition_names.index(comp), len(competition_names))
     return total_solves
