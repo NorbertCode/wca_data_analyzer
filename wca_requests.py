@@ -51,7 +51,8 @@ def get_competition_solves(competition_names: list[str], params: str = "",
             comp_solves = [solve for result in comp_data for solve in result["solves"]]
             total_solves.extend(comp_solves)
         except errors.InvalidDataError as exc:
-            error_output(exc)
+            if error_output is not None:
+                error_output(exc)
         if output is not None:
             output(competition_names.index(comp), len(competition_names))
     return total_solves
