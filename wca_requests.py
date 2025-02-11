@@ -46,7 +46,7 @@ def get_competition_solves(competition_names: list[str], params: str = "",
                            output: callable = None,
                            error_output: callable = None) -> list[int]:
     total_solves = []
-    for comp in competition_names:
+    for index, comp in enumerate(competition_names):
         try:
             comp_data = get_json_data(f"results/{comp}{params}")
             comp_solves = [solve for result in comp_data for solve in result["solves"]]
@@ -55,7 +55,7 @@ def get_competition_solves(competition_names: list[str], params: str = "",
             if error_output is not None:
                 error_output(exc)
         if output is not None:
-            output(competition_names.index(comp), len(competition_names))
+            output(index, len(competition_names))
     return total_solves
 
 
