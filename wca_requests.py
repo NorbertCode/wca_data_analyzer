@@ -7,7 +7,8 @@ import json
 API_URL = "https://raw.githubusercontent.com/robiningelbrecht/wca-rest-api/master/api/"
 
 
-def get_total_pages(url) -> int:
+def get_total_pages(params: str = "") -> int:
+    url = f"{API_URL}{params}.json"
     try:
         data = requests.get(url).json()
         return math.ceil(data["total"] / data["pagination"]["size"])
@@ -19,7 +20,7 @@ def get_json_data(params: str) -> dict:
     """Returns the contents of "items" from all pages"""
     output = []
     url = f"{API_URL}{params}"
-    total_pages = get_total_pages(f"{url}.json")
+    total_pages = get_total_pages(params)
     try:
         if total_pages > 1:
             for page in range(1, total_pages + 1):
