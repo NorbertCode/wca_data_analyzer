@@ -1,17 +1,10 @@
 import wca_requests
+import util
 import argparse
 
 
 def output_fetch_status(current: int, end: int):
     print(f"Loaded competition {current + 1}/{end}")
-
-
-def average(collection: list[int]) -> float:
-    return sum(collection) / len(collection)
-
-
-def to_seconds(milliseconds: float, decimal: int) -> float:
-    return round(milliseconds / 100, decimal)
 
 
 def load_args() -> argparse.Namespace:
@@ -32,8 +25,8 @@ def main(competition_parameters: str, solve_parameters: str):
     all_solves = wca_requests.get_competition_solves(comps, f"/{solve_parameters}",
                                                     output_fetch_status, print)
     filtered_solves = wca_requests.filter_dnfs(all_solves)
-    total_average = average(filtered_solves)
-    print(f"Total average: {to_seconds(total_average, 2)}")
+    total_average = util.average(filtered_solves)
+    print(f"Total average: {util.to_seconds(total_average, 2)}")
 
 
 if __name__ == "__main__":
