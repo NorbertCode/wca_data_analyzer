@@ -7,13 +7,25 @@ import json
 API_URL = "https://raw.githubusercontent.com/robiningelbrecht/wca-rest-api/master/api/"
 
 
+def send_request(url: str) -> dict:
+    """Sends a GET request and returns its contents as json"""
+    request = requests.get(url)
+    if request.status_code == 200:
+        try:
+            return request.json()
+        except json.JSONDecodeError as exc:
+            raise errors.FailedJsonParsingError(url) from exc
+    else:
+        raise errors.InvalidResponseError(url, request.status_code)
+
+
 def get_total_pages(params: str = "") -> int:
     url = f"{API_URL}{params}.json"
+    data = send_request(url)
     try:
-        data = requests.get(url).json()
         return math.ceil(data["total"] / data["pagination"]["size"])
-    except (json.JSONDecodeError, IndexError, ZeroDivisionError) as exc:
-        raise errors.InvalidDataError(url) from exc
+    except (IndexError, ZeroDivisionError) as exc:
+        raise errors.FailedReadingPageDataError(url) from exc
 
 
 def get_json_data(params: str) -> dict:
@@ -24,12 +36,12 @@ def get_json_data(params: str) -> dict:
     try:
         if total_pages > 1:
             for page in range(1, total_pages + 1):
-                page_data = requests.get(f"{url}-page-{page}.json").json()
+                page_data = send_request(f"{url}-page-{page}.json")
                 output.extend(page_data["items"])
         else:
-            output = requests.get(f"{url}.json").json()["items"]
-    except (json.JSONDecodeError, IndexError) as exc:
-        raise errors.InvalidDataError(url) from exc
+            output = send_request(f"{url}.json")["items"]
+    except IndexError as exc:
+        raise errors.FailedReadingPageDataError(url) from exc
 
     return output
 
@@ -51,7 +63,8 @@ def get_competition_solves(competition_names: list[str], params: str = "",
             comp_data = get_json_data(f"results/{comp}{params}")
             comp_solves = [solve for result in comp_data for solve in result["solves"]]
             total_solves.extend(comp_solves)
-        except errors.InvalidDataError as exc:
+        except (errors.InvalidResponseError, errors.FailedJsonParsingError,
+                errors.FailedReadingPageDataError) as exc:
             if error_output is not None:
                 error_output(exc)
         if output is not None:
